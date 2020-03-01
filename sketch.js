@@ -1,125 +1,87 @@
-let capture
-let tracker
-
-// --- 
-let xspacing = 16; // Distance between each horizontal location
-let w; // Width of entire wave
-let theta = 0.0; // Start angle at 0
-let amplitude = 10.0; // Height of wave
-let period = 150.0; // How many pixels before the wave repeats
-let dx; // Value for incrementing x
-let yvalues; // Using an array to store height values for the wave
-let old_x = 0;
-let old_y = 0;
-let X = 0;
-let Y = 0;
-let start_x;
-let start_y;
-let a = 0;
-//---  
+const AIO_USERNAME = ""
+const AIO_KEY = ""
 
 function setup() {
+    let canvas = createCanvas(640, 480)
+    noLoop()
+}
 
-    createCanvas(800, 800)
-    print('VErsion: 6');
+async function draw() { // note "async" keyword
 
-    // start capturing video
-    capture = createCapture(VIDEO)
-    capture.size(800, 600)
-    capture.hide()
+    // fetch our data
+    let data = await fetchData("sensor-test")      // note the "await" keyword
+    print(data)
 
-    // create the tracker
-    tracker = new clm.tracker()
-    tracker.init()
-    tracker.start(capture.elt)    
+    // re-sort the array by time
+    data.sort((a, b) => (a.created_at > b.created_at) ? 1 : -1)
 
-    // -- 
-    w = width + 16;
-    dx = (TWO_PI / period) * xspacing;
-    yvalues = new Array(floor(w / xspacing));
-    start_x = height / 2;
-    start_y = 200;
+    // make a new array with just the sensor values
+    // divide by the max value to "normalize" them to the range 0-1
+    let values = []
+    for (let datum of data) {
+        values.push(datum.value / 4095)
+    }
+
+    // make a new array with just the timestamp
+    // this one is trickier to normalize so we'll do it separately
+    let times = []
+    for (let datum of data) {
+        // convert the string into a numerical timestamp
+        let time = Date.parse(datum.created_at) / 1000
+        times.push(time)
+    }
+
+    // normalize the times to between 0 and 1
+    let start_time = min(times)
+    let stop_time = max(times)
+    for (let i=0; i<times.length; i++) {
+        let time = times[i]
+        times[i] = (time - start_time) / (stop_time - start_time)
+    }
+
+    // now we can draw
+
+    background(255)
+
+    // make colors
+    // in this case, we want a line every pixel, and to interpolate between values
+    // colorMode(HSB) // https://p5js.org/reference/#/p5/colorMode
+    for (let i=1; i<values.length; i++) {
+        let x1 = int(times[i-1] * width)
+        let x2 = int(times[i] * width)
+        print(x1, x2)
+        let c1 = color(55, values[i-1] * 255, 255)
+        let c2 = color(55, values[i] * 255, 255)
+        for (let x=x1; x<=x2; x++) {
+            let interpolation = (x-x1) / (x2-x1)
+            print(x, interpolation)
+            let c = lerpColor(c1, c2, interpolation)
+            stroke(c)
+            line(x, 0, x, height)
+        }
+    }
+
+    // this one is just a breakpoint line, similar to the adafruit feed page
+    // note that to get the y axis right, we have to flip it by subtracting from 1
+    stroke(0)
+    strokeWeight(2)
+    for (let i=1; i<values.length; i++) {   // starting at 1, not 0
+        let x1 = times[i-1] * width
+        let y1 = (1 - values[i-1]) * height
+        let x2 = times[i] * width
+        let y2 = (1 - values[i]) * height
+        line(x1, y1, x2, y2)
+    }
 
 }
 
-function calcWave() {
-    // Increment theta (try different values for
-    // 'angular velocity' here)
-    theta -= 0.08;
-
-    // For every x value, calculate a y value with sine function
-    let x = theta;
-    for (let i = 0; i < yvalues.length; i++) {
-        yvalues[i] = sin(x) * amplitude;
-        x += dx;
-    }
-}
-
-function renderWave(a, color, b) {
-    push();
-    stroke(color);
-    strokeWeight(b);
-    old_x = start_y + 0 * xspacing;
-    old_y = start_x + a + yvalues[0];
-    // A simple way to draw the wave with an ellipse at each location
-    for (let x = 0; x < yvalues.length; x++) {
-        // ellipse(x * xspacing, height / 2 + yvalues[x], 16, 16);
-        Y = start_x + a + yvalues[x];
-        X = start_y + x * xspacing;
-        line(old_y, old_x, Y, X);
-        old_x = X;
-        old_y = Y;
-    }
-    pop();
-}
-
-
-function draw() {    
-
-    background(0)
-    
-    // show the video feed
-    image(capture, 0, 0, capture.width, capture.height)
-
-    // get data from tracker
-    let positions = tracker.getCurrentPosition()
-
-    // make sure we have data to work with
-    if (positions.length > 0) {
-
-        stroke(255)
-        fill(255)
-
-        let noseX = positions[62][0]
-        let l_lip_x = positions[44][0]
-        let l_lip_y = positions[44][1]
-
-        let r_lip_x = positions[50][0] - 5
-        let r_lip_y = positions[50][1]
-
-        let u_lip_x = positions[60][0]
-        let u_lip_y = positions[60][1]
-
-        let d_lip_x = positions[57][0]
-        let d_lip_y = positions[57][1]
-        //l m 44
-        // r m 50 - 5
-        // u t 60
-        // d 57 
-        // print(dist(u_lip_x, u_lip_y, d_lip_x, d_lip_y));
-        if(dist(u_lip_x, u_lip_y, d_lip_x, d_lip_y) > 50) {
-            let size = dist(l_lip_x, l_lip_y, r_lip_x, r_lip_y)/7;
-            start_y = positions[50][1];
-            start_x = l_lip_x + 5;
-            calcWave();
-            renderWave(0, 'red', size); //red
-            renderWave(size, 'orange', size); //orange
-            renderWave(size * 2, 'yellow', size); //yellow
-            renderWave(size * 3, 'green', size); //green
-            renderWave(size * 4, 'lightblue', size); //light_blue
-            renderWave(size * 5, 'blue', size); //blue
-            renderWave(size * 6, 'purple', size); //purple
-        }  
-    }
+// this function fetches our data
+async function fetchData(feed) {
+    return await new Promise((resolve, reject) => {
+        let url = `https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${feed}/data`
+        httpGet(url, 'json', false, function(data) {
+            resolve(data)
+        })
+    })
 }
 
