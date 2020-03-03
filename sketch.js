@@ -1,8 +1,8 @@
-const AIO_USERNAME = ""
-const AIO_KEY = ""
+const AIO_USERNAME = "E00S"
+const AIO_KEY = "aio_Turw62EQw6UOfy9uLqocPoD6K2CD"
 
 function setup() {
-    let canvas = createCanvas(640, 480)
+    let canvas = createCanvas(width/2, height/2)
     noLoop()
 }
 
