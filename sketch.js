@@ -2,8 +2,8 @@ const AIO_USERNAME = "E00S"
 const AIO_KEY = "aio_AQvo77QqcZ6gOmsvCUJWdFZxdAP8"
 
 function setup() {
-    let canvas = createCanvas(windowWidth/2, windowHeight/3)
-    canvas.position(windowWidth/4, (windowHeight/1.5))
+    let canvas = createCanvas(windowWidth, windowHeight/3)
+    canvas.position(0, (windowHeight/1.5))
     noLoop()
 }
 
@@ -21,12 +21,18 @@ async function draw() { // note "async" keyword
         print(steps)
     }
     textFont('monospace')
-    textSize(width/6);
+    textSize(width/16);
     fill(255);
     textAlign(CENTER,CENTER);
-    text(steps,windowWidth/4,windowHeight/12);
+    text(steps, windowWidth/2, windowHeight/12);
+    text("1,962,116,129", windowWidth/2, windowHeight/4);
+    textSize(width/34);
+    textAlign(RIGHT,CENTER);
+    text("Steps\nTaken", windowWidth/1.02, windowHeight/12);
+    text("Steps To\nThe Moon", windowWidth/1.02, windowHeight/4);
     stroke(255);
-    line(0, windowHeight/6, windowWidth/4, windowHeight/6);
+    strokeWeight(5);
+    line(windowWidth/4.5, windowHeight/6, windowWidth/1.3, windowHeight/6);
 
 }
 
